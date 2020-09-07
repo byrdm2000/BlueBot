@@ -46,28 +46,28 @@ def join():
 class ServerMessage(object):
     def __init__(self, response):
         """
-        Initializes a ServerMessage object from bytes-like response with variant type, sender user, and content message
+        Initializes a ServerMessage object from bytes-like response with ping status, sender user, and content message
         If variant is a PING message, user and message are empty strings
         Response must be of the format 'PING :tmi.twitch.tv' or ':<username>!<username>@<username>...:<content>'
         """
         decoded_text = response.decode()
         split_response = decoded_text.split(" :")
         if split_response[0] == "PING":  # is PING variant
-            self.variant = "PING"
+            self.ping = True
             self.sender = ""
             self.content = ""
         elif split_response[0].find("PRIVMSG"):  # is chat message variant
-            self.variant = "MSG"
+            self.ping = False
             m = re.search('(?<=:).*(?=!)', split_response[0])  # matches characters between : and ! in string, exclusive
             self.sender = m.group(0)
             self.content = split_response[1]
 
-    def get_variant(self):
+    def is_ping(self):
         """
-        Determines variant of server message.
-        :return: "PING" if ping message, "MSG" if server message
+        Determines if server response is a ping.
+        :return: True if ping message, False if server message
         """
-        return self.variant
+        return self.ping
 
     def get_sender(self):
         """
@@ -159,14 +159,14 @@ if __name__ == "__main__":
     if join() is True:
         print("Ready!")
     recv_timer = time.time()
-    server_text = "".encode()
     print("Debug mode:", Config.DEBUG_MODE)
     while True:
+        server_text = None
         # Non-blocking way to receive messages from server
         if time.time() - recv_timer > 1.5:
             recv_text = irc.recv(2040)
             if recv_text != b'':
-                server_text = recv_text
+                server_text = ServerMessage(recv_text)
 
         if server_text.find("PING :tmi.twitch.tv".encode()):
             irc.send("PONG :tmi.twitch.tv".encode())

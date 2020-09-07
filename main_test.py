@@ -10,7 +10,7 @@ class ServerMessageTest(unittest.TestCase):
         # Covers response: PING message
         ping_text = b"PING :tmi.twitch.tv"
         message = ServerMessage(ping_text)
-        self.assertEqual("PING", message.get_variant())
+        self.assertEqual(True, message.is_ping())
         self.assertEqual("", message.get_sender())
         self.assertEqual("", message.get_content())
 
@@ -18,7 +18,7 @@ class ServerMessageTest(unittest.TestCase):
         # Covers response: chat message
         chat_text = b":ablueberrybat!ablueberrybat@ablueberrybat.tmi.twitch.tv PRIVMSG #ablueberrybat :test"
         message = ServerMessage(chat_text)
-        self.assertEqual("MSG", message.get_variant())
+        self.assertEqual(False, message.is_ping())
         self.assertEqual("ablueberrybat", message.get_sender())
         self.assertEqual("test", message.get_content())
 
