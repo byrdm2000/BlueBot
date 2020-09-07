@@ -163,19 +163,20 @@ if __name__ == "__main__":
     recv_timer = time.time()
     print("Debug mode:", Config.DEBUG_MODE)
     while True:
-        server_response = None
+        # TODO: fix this after a good night's sleep
+        server_response = b''  # default to empty string if no data received
         # Non-blocking way to receive messages from server
         if time.time() - recv_timer > 1.5:
             recv_text = irc.recv(2040)
             server_response = ServerMessage(recv_text)
 
-        if server_response.is_ping():
-            irc.send("PONG :tmi.twitch.tv".encode())
-        else:
-            message = message_factory(server_response.get_content())
-            # message = message_factory(input("> "))
-            if message.get_command() == "exit":
-                irc.close()
-                break
-            elif message.get_command():
-                command_handler(message)
+            if server_response.is_ping():
+                irc.send("PONG :tmi.twitch.tv".encode())
+            else:
+                message = message_factory(server_response.get_content())
+                # message = message_factory(input("> "))
+                if message.get_command() == "exit":
+                    irc.close()
+                    break
+                elif message.get_command():
+                    command_handler(message)
