@@ -1,6 +1,26 @@
 import unittest
-from main import Message, Command, message_factory
+from main import ServerMessage, Message, Command, message_factory
 
+
+class ServerMessageTest(unittest.TestCase):
+    """
+    Partiton on response: PING message, chat message
+    """
+    def test_ping(self):
+        # Covers response: PING message
+        ping_text = b"PING :tmi.twitch.tv"
+        message = ServerMessage(ping_text)
+        self.assertEqual("PING", message.get_variant())
+        self.assertEqual("", message.get_sender())
+        self.assertEqual("", message.get_content())
+
+    def test_msg(self):
+        # Covers response: chat message
+        chat_text = b":ablueberrybat!ablueberrybat@ablueberrybat.tmi.twitch.tv PRIVMSG #ablueberrybat :test"
+        message = ServerMessage(chat_text)
+        self.assertEqual("MSG", message.get_variant())
+        self.assertEqual("ablueberrybat", message.get_sender())
+        self.assertEqual("test", message.get_content())
 
 class MessageTest(unittest.TestCase):
     """

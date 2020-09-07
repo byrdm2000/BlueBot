@@ -3,6 +3,7 @@ from secret import Secret
 import minisongrequest
 import socket
 import time
+import re
 
 cmd_prefix = Config.COMMAND_PREFIX
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,6 +33,7 @@ def join():
     :return: True if successful, Error if there was an error
     """
     join_string = "JOIN #" + Config.JOIN_CHANNEL + "\n"
+    time.sleep(1)
     irc.send(join_string.encode())
     server_text = irc.recv(2040)
     if server_text.find("End of /NAMES list".encode()):
@@ -39,6 +41,47 @@ def join():
     test_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :Bot connected! \n"
     irc.send(test_string.encode())
     return True
+
+
+class ServerMessage(object):
+    def __init__(self, response):
+        """
+        Initializes a ServerMessage object from bytes-like response with variant type, sender user, and content message
+        If variant is a PING message, user and message are empty strings
+        Response must be of the format 'PING :tmi.twitch.tv' or ':<username>!<username>@<username>...:<content>'
+        """
+        decoded_text = response.decode()
+        split_response = decoded_text.split(" :")
+        if split_response[0] == "PING":  # is PING variant
+            self.variant = "PING"
+            self.sender = ""
+            self.content = ""
+        elif split_response[0].find("PRIVMSG"):  # is chat message variant
+            self.variant = "MSG"
+            m = re.search('(?<=:).*(?=!)', split_response[0])  # matches characters between : and ! in string, exclusive
+            self.sender = m.group(0)
+            self.content = split_response[1]
+
+    def get_variant(self):
+        """
+        Determines variant of server message.
+        :return: "PING" if ping message, "MSG" if server message
+        """
+        return self.variant
+
+    def get_sender(self):
+        """
+        Determines sender of server message.
+        :return: String of sender's username if MSG, empty string if PING
+        """
+        return self.sender
+
+    def get_content(self):
+        """
+        Determines content of server message.
+        :return: String of message content if MSG, empty string if PING
+        """
+        return self.content
 
 
 class Message(object):
