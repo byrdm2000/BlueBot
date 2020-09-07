@@ -48,7 +48,7 @@ class ServerMessage(object):
         """
         Initializes a ServerMessage object from bytes-like response with ping status, sender user, and content message
         If variant is a PING message, user and message are empty strings
-        Response must be of the format 'PING :tmi.twitch.tv' or ':<username>!<username>@<username>...:<content>'
+        Response must be of the format 'PING :tmi.twitch.tv', ':<username>!<username>@<username>...:<content>', or ''
         """
         decoded_text = response.decode()
         split_response = decoded_text.split(" :")
@@ -56,11 +56,15 @@ class ServerMessage(object):
             self.ping = True
             self.sender = ""
             self.content = ""
-        elif split_response[0].find("PRIVMSG"):  # is chat message variant
+        elif split_response[0].find("PRIVMSG") != -1:  # is chat message variant
             self.ping = False
             m = re.search('(?<=:).*(?=!)', split_response[0])  # matches characters between : and ! in string, exclusive
             self.sender = m.group(0)
             self.content = split_response[1]
+        elif split_response[0] == '':  # is blank string
+            self.ping = False
+            self.sender = ""
+            self.content = ""
 
     def is_ping(self):
         """
@@ -154,34 +158,24 @@ def command_handler(command):
 if __name__ == "__main__":
     print("Welcome to BlueBot debug prompt")
     print(cmd_prefix + "exit to exit")
-    if connect() is True:
-        print("Connected to server!")
-    if join() is True:
+    if connect() is True and join() is True:
         print("Ready!")
     recv_timer = time.time()
     print("Debug mode:", Config.DEBUG_MODE)
     while True:
-        server_text = None
+        server_response = None
         # Non-blocking way to receive messages from server
         if time.time() - recv_timer > 1.5:
             recv_text = irc.recv(2040)
-            if recv_text != b'':
-                server_text = ServerMessage(recv_text)
+            server_response = ServerMessage(recv_text)
 
-        if server_text.find("PING :tmi.twitch.tv".encode()):
+        if server_response.is_ping():
             irc.send("PONG :tmi.twitch.tv".encode())
-
-        #TODO: make adt that handles server messages
-
-        server_message = server_text.decode().rstrip()
-        print(server_message)
-        print(server_message.split(" :"))
-        message = server_message.split(" :")[-1]
-        print(message)
-        message = message_factory(message)
-        # message = message_factory(input("> "))
-        if message.get_command() == "exit":
-            irc.close()
-            break
-        elif message.get_command():
-            command_handler(message)
+        else:
+            message = message_factory(server_response.get_content())
+            # message = message_factory(input("> "))
+            if message.get_command() == "exit":
+                irc.close()
+                break
+            elif message.get_command():
+                command_handler(message)

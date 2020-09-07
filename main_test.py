@@ -4,7 +4,7 @@ from main import ServerMessage, Message, Command, message_factory
 
 class ServerMessageTest(unittest.TestCase):
     """
-    Partiton on response: PING message, chat message
+    Partiton on response: PING message, chat message, empty message
     """
     def test_ping(self):
         # Covers response: PING message
@@ -21,6 +21,15 @@ class ServerMessageTest(unittest.TestCase):
         self.assertEqual(False, message.is_ping())
         self.assertEqual("ablueberrybat", message.get_sender())
         self.assertEqual("test", message.get_content())
+
+    def test_blank(self):
+        # Covers response: empty message
+        empty_text = b''
+        message = ServerMessage(empty_text)
+        self.assertEqual(False, message.is_ping())
+        self.assertEqual("", message.get_sender())
+        self.assertEqual("", message.get_content())
+
 
 class MessageTest(unittest.TestCase):
     """
