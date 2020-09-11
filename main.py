@@ -8,6 +8,10 @@ import re
 cmd_prefix = Config.COMMAND_PREFIX
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+# Message limits, from https://dev.twitch.tv/docs/irc/guide#command--message-limits
+NON_MOD_RATE_LIMIT = 20/30
+MOD_RATE_LIMIT = 100/30
+
 
 # TODO: make better helper functions
 def connect():
@@ -156,27 +160,29 @@ def command_handler(command):
 
 
 if __name__ == "__main__":
-    print("Welcome to BlueBot debug prompt")
+    print("Welcome to BlueBot")
     print(cmd_prefix + "exit to exit")
     if connect() is True and join() is True:
         print("Ready!")
-    recv_timer = time.time()
+    msg_timer = time.time()
+    rate_limit = NON_MOD_RATE_LIMIT  # in future, check if bot is a mod and set limit accordingly
     print("Debug mode:", Config.DEBUG_MODE)
     while True:
-        # TODO: fix this after a good night's sleep
-        server_response = b''  # default to empty string if no data received
-        # Non-blocking way to receive messages from server
-        if time.time() - recv_timer > 1.5:
-            recv_text = irc.recv(2040)
-            server_response = ServerMessage(recv_text)
+        recv_text = irc.recv(2040)
+        if Config.DEBUG_MODE:
+            print(recv_text)
+        server_response = ServerMessage(recv_text)
 
+        # To obey Twitch send rate limit, we reset timer on send
+        if time.time() - msg_timer > rate_limit:
             if server_response.is_ping():
                 irc.send("PONG :tmi.twitch.tv".encode())
+                msg_timer = time.time()
             else:
                 message = message_factory(server_response.get_content())
-                # message = message_factory(input("> "))
                 if message.get_command() == "exit":
                     irc.close()
                     break
                 elif message.get_command():
                     command_handler(message)
+                    msg_timer = time.time()
