@@ -55,9 +55,8 @@ def send(text):
     """
     if Config.DEBUG_MODE:
         print(text)
-    else:
-        send_string = text + "\r\n"
-        irc.send(send_string.encode())
+    send_string = text + "\r\n"
+    irc.send(send_string.encode())
     return True
 
 
