@@ -47,6 +47,20 @@ def join():
     return True
 
 
+def send(text):
+    """
+    Sends message to server with specified text
+    :param text: String, text to send
+    :return: True if successful, Error if there was an error
+    """
+    if Config.DEBUG_MODE:
+        print(text)
+    else:
+        send_string = text + "\r\n"
+        irc.send(send_string.encode())
+    return True
+
+
 class ServerMessage(object):
     def __init__(self, response):
         """
@@ -64,7 +78,7 @@ class ServerMessage(object):
             self.ping = False
             m = re.search('(?<=:).*(?=!)', split_response[0])  # matches characters between : and ! in string, exclusive
             self.sender = m.group(0)
-            self.content = split_response[1]
+            self.content = split_response[1].rstrip()  # since messages include '\r\n' at end
         elif split_response[0] == '':  # is blank string
             self.ping = False
             self.sender = ""
@@ -154,19 +168,18 @@ def command_handler(command):
     """
     if command.get_command() in minisongrequest.HANDLED_COMMANDS:
         minisongrequest.command_handler(command)
-
     if command.get_command() == "ping":
-        print("Pong!")
+        send("Pong!")
 
 
 if __name__ == "__main__":
     print("Welcome to BlueBot")
+    print("Debug mode:", Config.DEBUG_MODE)
     print(cmd_prefix + "exit to exit")
     if connect() is True and join() is True:
         print("Ready!")
     msg_timer = time.time()
     rate_limit = NON_MOD_RATE_LIMIT  # in future, check if bot is a mod and set limit accordingly
-    print("Debug mode:", Config.DEBUG_MODE)
     while True:
         recv_text = irc.recv(2040)
         if Config.DEBUG_MODE:
@@ -176,7 +189,7 @@ if __name__ == "__main__":
         # To obey Twitch send rate limit, we reset timer on send
         if time.time() - msg_timer > rate_limit:
             if server_response.is_ping():
-                irc.send("PONG :tmi.twitch.tv".encode())
+                send("PONG :tmi.twitch.tv")
                 msg_timer = time.time()
             else:
                 message = message_factory(server_response.get_content())

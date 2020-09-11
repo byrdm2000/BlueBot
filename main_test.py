@@ -8,7 +8,7 @@ class ServerMessageTest(unittest.TestCase):
     """
     def test_ping(self):
         # Covers response: PING message
-        ping_text = b"PING :tmi.twitch.tv"
+        ping_text = b"PING :tmi.twitch.tv\r\n"
         message = ServerMessage(ping_text)
         self.assertEqual(True, message.is_ping())
         self.assertEqual("", message.get_sender())
@@ -16,10 +16,10 @@ class ServerMessageTest(unittest.TestCase):
 
     def test_msg(self):
         # Covers response: chat message
-        chat_text = b":ablueberrybat!ablueberrybat@ablueberrybat.tmi.twitch.tv PRIVMSG #ablueberrybat :test"
+        chat_text = b":testuser!testuser@testuser.tmi.twitch.tv PRIVMSG #testuser :test\r\n"
         message = ServerMessage(chat_text)
         self.assertEqual(False, message.is_ping())
-        self.assertEqual("ablueberrybat", message.get_sender())
+        self.assertEqual("testuser", message.get_sender())
         self.assertEqual("test", message.get_content())
 
     def test_blank(self):
