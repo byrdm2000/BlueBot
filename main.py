@@ -42,20 +42,20 @@ def join():
     server_text = irc.recv(2040)
     if server_text.find("End of /NAMES list".encode()):
         print("Join successful")
-    test_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :Bot connected! \n"
+    test_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :Bot connected!\r\n"
     irc.send(test_string.encode())
     return True
 
 
 def send(text):
     """
-    Sends message to server with specified text
+    Sends PRIVMSG message to server with specified text
     :param text: String, text to send
     :return: True if successful, Error if there was an error
     """
     if Config.DEBUG_MODE:
         print(text)
-    send_string = text + "\r\n"
+    send_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :" + text + "\r\n"
     irc.send(send_string.encode())
     return True
 
@@ -169,6 +169,8 @@ def command_handler(command):
         minisongrequest.command_handler(command)
     if command.get_command() == "ping":
         send("Pong!")
+    if command.get_command() == "pong":
+        send("Ping!")
 
 
 if __name__ == "__main__":
@@ -177,8 +179,9 @@ if __name__ == "__main__":
     print(cmd_prefix + "exit to exit")
     if connect() is True and join() is True:
         print("Ready!")
-    msg_timer = time.time()
-    rate_limit = NON_MOD_RATE_LIMIT  # in future, check if bot is a mod and set limit accordingly
+    msg_timer = time.time_ns()
+    SECOND_TO_NS_CONV = 10**9
+    rate_limit = NON_MOD_RATE_LIMIT * SECOND_TO_NS_CONV  # in future, check if bot is a mod and set limit accordingly
     while True:
         recv_text = irc.recv(2040)
         if Config.DEBUG_MODE:
@@ -186,10 +189,10 @@ if __name__ == "__main__":
         server_response = ServerMessage(recv_text)
 
         # To obey Twitch send rate limit, we reset timer on send
-        if time.time() - msg_timer > rate_limit:
+        if time.time_ns() - msg_timer > rate_limit:
             if server_response.is_ping():
-                send("PONG :tmi.twitch.tv")
-                msg_timer = time.time()
+                irc.send("PONG :tmi.twitch.tv".encode())
+                msg_timer = time.time_ns()
             else:
                 message = message_factory(server_response.get_content())
                 if message.get_command() == "exit":
@@ -197,4 +200,4 @@ if __name__ == "__main__":
                     break
                 elif message.get_command():
                     command_handler(message)
-                    msg_timer = time.time()
+                    msg_timer = time.time_ns()
