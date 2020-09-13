@@ -10,7 +10,7 @@ irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Message limits, from https://dev.twitch.tv/docs/irc/guide#command--message-limits
 NON_MOD_RATE_LIMIT = 20/30
-MOD_RATE_LIMIT = 100/30
+MOD_RATE_LIMIT = 100/30  # TODO: add mod capabilities, command privilege system
 
 
 # TODO: make better helper functions
@@ -167,6 +167,7 @@ def command_handler(command):
     """
     if command.get_command() in minisongrequest.HANDLED_COMMANDS:
         minisongrequest.command_handler(command)
+        send(minisongrequest.out.read())
     if command.get_command() == "ping":
         send("Pong!")
     if command.get_command() == "pong":
@@ -191,7 +192,7 @@ if __name__ == "__main__":
         # To obey Twitch send rate limit, we reset timer on send
         if time.time_ns() - msg_timer > rate_limit:
             if server_response.is_ping():
-                irc.send("PONG :tmi.twitch.tv".encode())
+                irc.send("PONG :tmi.twitch.tv\r\n".encode())
                 msg_timer = time.time_ns()
             else:
                 message = message_factory(server_response.get_content())
