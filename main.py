@@ -108,15 +108,20 @@ class ServerMessage(object):
 
 
 class Message(object):
-    def __init__(self, text):
+    def __init__(self, text, sender):
         """
         Initializes a Message object with text text
         :param text: String, contents of message
+        :param sender: String, username of Twitch user who sent message
         """
         self.text = text
+        self.sender = sender
 
     def get_text(self):
         return self.text
+
+    def get_sender(self):
+        return self.sender
 
     def get_command(self):
         return None
@@ -126,18 +131,19 @@ class Message(object):
 
 
 class Command(Message):
-    def __init__(self, command, args, prefix=cmd_prefix):
+    def __init__(self, command, args, sender, prefix=cmd_prefix):
         """
         Initializes a Command object, where commands and args are separated by spaces
         :param command: String, command to use
         :param args: List of strings, arguments for command
+        :param sender: String, username of Twitch user who sent message
         :param prefix: String representing command prefix, usually from config
         """
         self.prefix = prefix
         self.command = command
         self.args = args
         unstrip = prefix + command + " " + " ".join(args)
-        Message.__init__(self, unstrip.rstrip())
+        Message.__init__(self, unstrip.rstrip(), sender)
 
     def get_command(self):
         return self.command
@@ -146,19 +152,20 @@ class Command(Message):
         return self.args
 
 
-def message_factory(input_text, prefix=cmd_prefix):
+def message_factory(input_text, sender, prefix=cmd_prefix):
     """
     Makes a Message or Command object from input text
     :param input_text: String, input text
+    :param sender: String, username of Twitch user who sent message
     :param prefix: String, prefix to look for (usually from config)
     :return: Either a Message object or Command object, depending on if input starts with the command identifier
     """
     if input_text[:len(prefix):] == prefix:
         command = input_text.split(" ")[0][len(prefix):]  # since command prefix is at start
         args = input_text.split(" ")[1:]
-        return Command(command, args, prefix)
+        return Command(command, args, sender, prefix)
     else:
-        return Message(input_text)
+        return Message(input_text, sender)
 
 
 def command_handler(command):
@@ -200,7 +207,7 @@ if __name__ == "__main__":
                 irc.send("PONG :tmi.twitch.tv\r\n".encode())
                 msg_timer = time.time_ns()
             else:
-                message = message_factory(server_response.get_content())
+                message = message_factory(server_response.get_content(), server_response.get_sender())
                 if message.get_command() == "exit":
                     irc.close()
                     break
