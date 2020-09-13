@@ -5,6 +5,8 @@ import socket
 import time
 import re
 
+import modules.module_example
+
 cmd_prefix = Config.COMMAND_PREFIX
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -168,10 +170,11 @@ def command_handler(command):
     if command.get_command() in minisongrequest.HANDLED_COMMANDS:
         minisongrequest.command_handler(command)
         send(minisongrequest.out.read())
-    if command.get_command() == "ping":
-        send("Pong!")
-    if command.get_command() == "pong":
-        send("Ping!")
+
+    # TODO: replace with way to query all modules
+    if command.get_command() in modules.module_example.HANDLED_COMMANDS:
+        modules.module_example.command_handler(command)
+        send(modules.module_example.out.read())
 
 
 if __name__ == "__main__":
@@ -188,6 +191,8 @@ if __name__ == "__main__":
         if Config.DEBUG_MODE:
             print(recv_text)
         server_response = ServerMessage(recv_text)
+
+        # TODO: add way to query out of all modules
 
         # To obey Twitch send rate limit, we reset timer on send
         if time.time_ns() - msg_timer > rate_limit:
