@@ -107,6 +107,104 @@ class Media(object):
         return self.audio_url
 
 
+class Player(object):
+    """
+    Player that plays song requests using VLC
+
+    Invariant regarding current_media and len(queue): if len(queue) > 0, there MUST be an item currently playing
+    """
+
+    def __init__(self):
+        """
+        Initializes Player object with VLC instance self.instance, VLC player self.player, event manager self.events,
+        current media self.media, media list self.queue, allowed playback status self.enable_playback,
+        and volume self.volume
+        """
+
+    def add_media(self, media):
+        """
+        Adds Media object to queue if playing media, or sets as current song if not playing
+        :param media: Media object
+        :return: None, modifies queue or player directly
+        """
+
+    def add_loc(self, loc):
+        """
+        Adds location to player as Media object
+        :param loc: url for media
+        :return: None, modifies queue directly
+        :raises: ValueError if location is not a YouTube video
+        """
+
+    def play_queue(self):
+        """
+        Plays queue in current state
+        :return: None, modifies player directly
+        """
+
+    def stop(self):
+        """
+        Stops playback, clears queue
+        :return: None, modifies queue and player directly
+        """
+
+    def play_pause(self):
+        """
+        Stops or resumes playback without clearing queue
+        :return: None, modifies player directly
+        """
+
+    def get_queue(self):
+        """
+        Getter function for retrieving queue
+        :return: Copy of queue object
+        """
+
+    def get_current_media(self):
+        """
+        Getter function for retrieving current media
+        :return: Current media object, or None if there is no current media
+        """
+
+    def advance_queue(self, event=None):
+        """
+        Callback function to advances queue on media end
+        :param event: Optional event object for VLC event handler
+        :return: None, modifies queue and player directly
+        """
+
+    def set_volume(self, volume):
+        """
+        Sets player volume to specified volume
+        :param volume: Integer representing volume
+        :return: None, modifies player directly
+        """
+
+    def get_volume(self):
+        """
+        Getter function for media volume
+        :return: Volume of player
+        """
+
+    def enable_playback(self):
+        """
+        Enables playback for play_queue function
+        :return: None, modifies Player directly
+        """
+
+    def disable_playback(self):
+        """
+        Disables playback for play_queue function
+        :return: None, modifies Player directly
+        """
+
+    def get_playback_state(self):
+        """
+        Gets state of if playback is currently allowed
+        :return: True if playback is allowed, False if not
+        """
+
+
 # Command handler function allows commands to be handled from main python file. REQUIRED.
 def command_handler(command):
     pass
