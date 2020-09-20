@@ -206,20 +206,20 @@ class PlayerTest(unittest.TestCase):
     """
     Tests for playback allowed methods
     
-    Partition on get_playback_state: get_playback_state = True, get_playback_state = False
+    Partition on is_playback_allowed: is_playback_allowed = True, is_playback_allowed = False
     """
 
     def test_playback_not_allowed(self):
-        # Covers get_playback_state = False
+        # Covers is_playback_allowed = False
         player = Player()
         player.disable_playback()
-        self.assertFalse(player.get_playback_state())
+        self.assertFalse(player.is_playback_allowed())
 
     def test_playback_allowed(self):
-        # Covers get_playback_state = True
+        # Covers is_playback_allowed = True
         player = Player()
         player.enable_playback()
-        self.assertTrue(player.get_playback_state())
+        self.assertTrue(player.is_playback_allowed())
 
 
 if __name__ == '__main__':

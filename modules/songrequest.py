@@ -198,7 +198,7 @@ class Player(object):
         :return: None, modifies Player directly
         """
 
-    def get_playback_state(self):
+    def is_playback_allowed(self):
         """
         Gets state of if playback is currently allowed
         :return: True if playback is allowed, False if not
