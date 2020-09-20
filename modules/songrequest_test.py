@@ -46,6 +46,7 @@ class PlayerTest(unittest.TestCase):
     def test_add_media_empty_queue_no_media(self):
         # Covers queue is empty, there isn't current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         self.assertEqual([], player.get_queue())
@@ -54,6 +55,7 @@ class PlayerTest(unittest.TestCase):
     def test_add_media_empty_queue_current_media(self):
         # Covers queue is empty, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
@@ -63,6 +65,7 @@ class PlayerTest(unittest.TestCase):
     def test_add_media_nonempty_queue_current_media(self):
         # Covers queue is not empty, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
@@ -84,6 +87,7 @@ class PlayerTest(unittest.TestCase):
     def test_stop_empty_queue_no_media(self):
         # Covers queue is empty, there isn't current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.stop()
@@ -93,6 +97,7 @@ class PlayerTest(unittest.TestCase):
     def test_stop_empty_queue_current_media(self):
         # Covers queue is empty, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
@@ -103,10 +108,12 @@ class PlayerTest(unittest.TestCase):
     def test_stop_nonempty_queue_current_media(self):
         # Covers queue is not empty, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
         player.add_media(media)
+        player.stop()
         self.assertEqual([], player.get_queue())
         self.assertIsNone(player.get_current_media())
 
@@ -126,6 +133,7 @@ class PlayerTest(unittest.TestCase):
     def test_get_queue_nonempty_queue(self):
         # Covers queue is nonempty
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
@@ -140,6 +148,7 @@ class PlayerTest(unittest.TestCase):
     def test_get_current_media_media_present(self):
         # Covers there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         self.assertEqual(media, player.get_current_media())
@@ -147,7 +156,7 @@ class PlayerTest(unittest.TestCase):
     def test_get_current_media_media_not_present(self):
         # Covers there isn't current media
         player = Player()
-        self.assertIsNone(player.get_queue())
+        self.assertEqual([], player.get_queue())
 
     """
     Tests for advance_queue
@@ -159,6 +168,7 @@ class PlayerTest(unittest.TestCase):
     def test_advance_queue_empty_queue_no_media(self):
         # Covers queue is empty, there isn't current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         player.advance_queue()
         self.assertEqual([], player.get_queue())
         self.assertIsNone(player.get_current_media())
@@ -166,6 +176,7 @@ class PlayerTest(unittest.TestCase):
     def test_advance_queue_empty_queue_current_media(self):
         # Covers queue is empty, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.advance_queue()
@@ -175,6 +186,7 @@ class PlayerTest(unittest.TestCase):
     def test_advance_queue_1_queue_current_media(self):
         # Covers len(queue) = 1, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
@@ -185,6 +197,7 @@ class PlayerTest(unittest.TestCase):
     def test_advance_queue_long_queue_current_media(self):
         # Covers len(queue) > 1, there is current media
         player = Player()
+        player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
