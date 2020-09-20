@@ -3,7 +3,7 @@ import vlc
 
 # You can import anything that your module may need at the top, just like a regular Python script
 
-HANDLED_COMMANDS = {"songrequest"}  # Add commands that your module can handle here, without prefix
+HANDLED_COMMANDS = {"songrequest", "skip", "volume"}  # Add commands that your module can handle here, without prefix
 
 
 class Output(object):
@@ -136,15 +136,16 @@ class Player(object):
         """
         Adds Media object to queue if playing media, or sets as current song if not playing
         :param media: Media object
-        :return: None, modifies queue or player directly
+        :return: Media object added, for client processing
         """
         if self.current_media is None:  # no current media playing
             self.current_media = media
             self.play_queue()
         else:
             self.queue.append(media)
+        return media
 
-    def add_loc(self, loc, requester):
+    def add_loc(self, loc, requester):  # songrequest <url>
         """
         Adds location to player as Media object
         :param loc: String, url for media
@@ -153,7 +154,7 @@ class Player(object):
         :raises: ValueError if location is not a YouTube video
         """
         media = Media(loc, requester)
-        self.add_media(media)
+        return self.add_media(media)
 
     def play_queue(self):
         """
@@ -169,7 +170,7 @@ class Player(object):
             # callback to advance queue at end of song
             self.events.event_attach(vlc.EventType.MediaPlayerEndReached, self.advance_queue)
 
-    def stop(self):
+    def stop(self):  # COMAMND: songrequest stop
         """
         Stops playback, clears queue
         :return: None, modifies queue and player directly
@@ -185,21 +186,21 @@ class Player(object):
         """
         self.player.set_pause(self.player.is_playing())  # tbh i don't the behavior of this function
 
-    def get_queue(self):
+    def get_queue(self):   # COMMAND: queue
         """
         Getter function for retrieving queue
         :return: Copy of queue object
         """
         return self.queue[::]  # return a protective copy
 
-    def get_current_media(self):
+    def get_current_media(self):   # COMMAND: currentlyplaying
         """
         Getter function for retrieving current media
         :return: Current media object, or None if there is no current media
         """
         return self.current_media
 
-    def advance_queue(self, event=None):
+    def advance_queue(self, event=None):  # COMMAND: skip
         """
         Callback function to advances queue on media end
         :param event: Optional event object for VLC event handler
@@ -215,7 +216,7 @@ class Player(object):
             self.current_media = None
             self.stop()
 
-    def set_volume(self, volume):
+    def set_volume(self, volume):  # volume <vol>
         """
         Sets player volume to specified volume
         :param volume: Integer representing volume
@@ -224,28 +225,28 @@ class Player(object):
         self.volume = volume
         self.player.audio_set_volume(volume)
 
-    def get_volume(self):
+    def get_volume(self):  # volume
         """
         Getter function for media volume
         :return: Volume of player
         """
         return self.volume
 
-    def enable_playback(self):
+    def enable_playback(self):  # COMMAND: songrequest enable
         """
         Enables playback for play_queue function
         :return: None, modifies Player directly
         """
         self.playback_allowed = True
 
-    def disable_playback(self):
+    def disable_playback(self):  # COMAMND: songrequest disable
         """
         Disables playback for play_queue function
         :return: None, modifies Player directly
         """
         self.playback_allowed = False
 
-    def is_playback_allowed(self):
+    def is_playback_allowed(self):  # COMMAND: songrequest status
         """
         Gets state of if playback is currently allowed
         :return: True if playback is allowed, False if not
@@ -255,10 +256,51 @@ class Player(object):
 
 # Command handler function allows commands to be handled from main python file. REQUIRED.
 def command_handler(command):
-    pass
+    sub_command = command.get_args()[0]
+    requester = command.get_sender()
+    sub_args = command.get_args()[1::]
+
+    if sub_command == "queue":
+        queue = player.get_queue()
+        if len(queue) > 0:
+            out_string = ""
+            for i in range(len(queue)):
+                request = queue[i]
+                out_string += "{}. {} ({})\n".format(i + 1, request.get_media_title(), request.get_requester())
+            out.write(out_string)
+        else:
+            out.write("Queue is empty")
+
+    if sub_command == "skip":
+        skipped_song = player.get_current_media()
+        player.advance_queue()
+        out.write('Skipped "' + skipped_song.get_media_title() + '" requested by ' + skipped_song.get_requester())
+
+    if sub_command == "songrequest":
+        request_command = sub_args
+        request_args = sub_args[1::]
+        if request_command == "enable":
+            player.enable_playback()
+            out.write("Songrequests enabled")
+        elif request_command == "disable":
+            player.disable_playback()
+            out.write("Songrequests disabled")
+        elif request_command == "status":
+            if player.is_playback_allowed():
+                out.write("Songrequests: enabled")
+            else:
+                out.write("Songrequests: disabled")
+        elif request_command == "stop":
+            player.stop()
+            out.write("Queue cleared!")
+        else:  # must be a songrequest <url>
+            url = request_args[0]
+            media = player.add_loc(url, requester)
+            out.write('Added: "' + media.get_media_title() + '" requested by ' + media.get_requester())
 
 
 # You can add additional functions your module may need here.
 
 # Put any initialization code here
-pass
+player = Player()
+print("Songrequest module loaded")

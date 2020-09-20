@@ -48,9 +48,11 @@ class PlayerTest(unittest.TestCase):
         player = Player()
         player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
-        player.add_media(media)
+        return_media = "Rick Astley - Never Gonna Give You Up (Video)"
+        return_media = player.add_media(media)
         self.assertEqual([], player.get_queue())
         self.assertEqual(media, player.get_current_media())
+        self.assertEqual(return_media, media)
 
     def test_add_media_empty_queue_current_media(self):
         # Covers queue is empty, there is current media
@@ -58,9 +60,10 @@ class PlayerTest(unittest.TestCase):
         player.disable_playback()  # to prevent media from playing
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
-        player.add_media(media)
+        return_media = player.add_media(media)
         self.assertEqual([media], player.get_queue())
         self.assertEqual(media, player.get_current_media())
+        self.assertEqual(return_media, media)
 
     def test_add_media_nonempty_queue_current_media(self):
         # Covers queue is not empty, there is current media
@@ -69,9 +72,10 @@ class PlayerTest(unittest.TestCase):
         media = Media("dQw4w9WgXcQ", "RickAstley")
         player.add_media(media)
         player.add_media(media)
-        player.add_media(media)
+        return_media = player.add_media(media)
         self.assertEqual([media, media], player.get_queue())
         self.assertEqual(media, player.get_current_media())
+        self.assertEqual(return_media, media)
 
     # Since add_loc is a wrapper for add_media, its tests are covered by tests for the Media object
 
