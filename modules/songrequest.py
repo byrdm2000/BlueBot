@@ -222,6 +222,10 @@ class Player(object):
         :param volume: Integer representing volume
         :return: None, modifies player directly
         """
+        if volume > 100:
+            volume = 100
+        elif volume < 0:
+            volume = 0
         self.volume = volume
         self.player.audio_set_volume(volume)
 
@@ -297,6 +301,14 @@ def command_handler(command):
             url = request_args[0]
             media = player.add_loc(url, requester)
             out.write('Added: "' + media.get_media_title() + '" requested by ' + media.get_requester())
+
+    if sub_command == "volume":
+        if len(sub_args) == 0:  # just volume, no arg
+            out.write(player.get_volume())
+        else:
+            volume = sub_args[0]
+            player.set_volume(volume)
+            out.write("Volume set to " + player.get_volume())
 
 
 # You can add additional functions your module may need here.

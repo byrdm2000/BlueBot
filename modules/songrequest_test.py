@@ -212,13 +212,28 @@ class PlayerTest(unittest.TestCase):
 
     """
     Tests for volume-related methods
+    
+    Partition on volume: volume < 0, 0 <= volume <= 100, volume > 100 
     """
 
-    def test_volume_set_and_get(self):
+    def test_volume_set_and_get_in_range(self):
+        # Covers 0 <= volume <= 100
         player = Player()
         volume = 50
         player.set_volume(volume)
         self.assertEqual(volume, player.get_volume())
+
+    def test_volume_set_and_get_lt_0(self):
+        player = Player()
+        volume = -1
+        player.set_volume(volume)
+        self.assertEqual(0, player.get_volume())  # negatives get rounded to 0
+
+    def test_volume_set_and_get_gt_100(self):
+        player = Player()
+        volume = 101
+        player.set_volume(volume)
+        self.assertEqual(100, player.get_volume())  # values over 100 get rounded to 100
 
     """
     Tests for playback allowed methods
