@@ -60,7 +60,7 @@ def send(text):
     :return: True if successful, Error if there was an error
     """
     if Config.DEBUG_MODE:
-        print(text)
+        print("[INFO]: " + text)
     send_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :" + text + "\r\n"
     irc.send(send_string.encode())
     return True
@@ -178,6 +178,12 @@ def command_handler(command):
     :param command: Command object
     :return: None
     """
+    if command.get_command() == "modules":
+        module_string = "Loaded modules: "
+        for module in AVAIL_MODULES:
+            module_string += module + " "
+        send(module_string.rstrip())
+
     for m in AVAIL_MODULES:
         # Get command_handler function from each module
         mod = __import__("modules." + m, fromlist=["command_handler, HANDLED_COMMANDS", "out"])
@@ -188,8 +194,8 @@ def command_handler(command):
             try:
                 command_func(command)
                 send(out_func.read())
-            except Exception as err:  # since a module could error with anything, use bare except
-                print("An error occured in module", m)
+            except Exception as err:
+                print("[ERROR] An error occured in module", m)
                 traceback.print_tb(err.__traceback__)
 
 
