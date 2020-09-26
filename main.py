@@ -1,11 +1,13 @@
 from config import Config
 from secret import Secret
-import minisongrequest
+import modules
+import modulefinder
+import importlib
+import traceback
 import socket
 import time
 import re
 
-import modules.module_example
 
 cmd_prefix = Config.COMMAND_PREFIX
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -174,14 +176,20 @@ def command_handler(command):
     :param command: Command object
     :return: None
     """
-    if command.get_command() in minisongrequest.HANDLED_COMMANDS:
-        minisongrequest.command_handler(command)
-        send(minisongrequest.out.read())
-
-    # TODO: replace with way to query all modules
-    if command.get_command() in modules.module_example.HANDLED_COMMANDS:
-        modules.module_example.command_handler(command)
-        send(modules.module_example.out.read())
+    finder = modulefinder.ModuleFinder(["modules"])  # Get list of modules in folder
+    for m in finder.find_all_submodules(modules):
+        # Get command_handler function from each module
+        mod = __import__("modules." + m, fromlist=["command_handler, HANDLED_COMMANDS", "out"])
+        command_func = getattr(mod, "command_handler")
+        avail_commands = getattr(mod, "HANDLED_COMMANDS")
+        out_func = getattr(mod, "out")
+        if command.get_command() in avail_commands:
+            try:
+                command_func(command)
+                send(out_func.read())
+            except Exception as err:  # since a module could error with anything, use bare except
+                print("An error occured in module", m)
+                traceback.print_tb(err.__traceback__)
 
 
 if __name__ == "__main__":
@@ -199,7 +207,11 @@ if __name__ == "__main__":
             print(recv_text)
         server_response = ServerMessage(recv_text)
 
-        # TODO: add way to query out of all modules
+        finder = modulefinder.ModuleFinder(["modules"])
+        for m in finder.find_all_submodules(modules):
+            mod = __import__("modules." + m, fromlist=["out"])
+            out_func = getattr(mod, "out")
+            send(out_func.read())
 
         # To obey Twitch send rate limit, we reset timer on send
         if time.time_ns() - msg_timer > rate_limit:
