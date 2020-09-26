@@ -2,7 +2,6 @@ from config import Config
 from secret import Secret
 import modules
 import modulefinder
-import importlib
 import traceback
 import socket
 import time
@@ -15,6 +14,9 @@ irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Message limits, from https://dev.twitch.tv/docs/irc/guide#command--message-limits
 NON_MOD_RATE_LIMIT = 20/30
 MOD_RATE_LIMIT = 100/30  # TODO: add mod capabilities, command privilege system
+
+finder = modulefinder.ModuleFinder(["modules"])
+AVAIL_MODULES = finder.find_all_submodules(modules)
 
 
 # TODO: make better helper functions
@@ -176,8 +178,7 @@ def command_handler(command):
     :param command: Command object
     :return: None
     """
-    finder = modulefinder.ModuleFinder(["modules"])  # Get list of modules in folder
-    for m in finder.find_all_submodules(modules):
+    for m in AVAIL_MODULES:
         # Get command_handler function from each module
         mod = __import__("modules." + m, fromlist=["command_handler, HANDLED_COMMANDS", "out"])
         command_func = getattr(mod, "command_handler")
@@ -207,11 +208,11 @@ if __name__ == "__main__":
             print(recv_text)
         server_response = ServerMessage(recv_text)
 
-        finder = modulefinder.ModuleFinder(["modules"])
-        for m in finder.find_all_submodules(modules):
+        for m in AVAIL_MODULES:
             mod = __import__("modules." + m, fromlist=["out"])
             out_func = getattr(mod, "out")
-            send(out_func.read())
+            if out_func.is_updated():
+                send(out_func.read())
 
         # To obey Twitch send rate limit, we reset timer on send
         if time.time_ns() - msg_timer > rate_limit:
