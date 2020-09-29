@@ -13,10 +13,13 @@ irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Message limits, from https://dev.twitch.tv/docs/irc/guide#command--message-limits
 NON_MOD_RATE_LIMIT = 20/30
-MOD_RATE_LIMIT = 100/30  # TODO: add mod capabilities, command privilege system
+MOD_RATE_LIMIT = 100/30
 
 finder = modulefinder.ModuleFinder(["modules"])
 AVAIL_MODULES = finder.find_all_submodules(modules)
+
+chat_mods = set()
+MOD_UPDATE_TIMEOUT = 30  # time between getting mod list from server
 
 
 # TODO: make better helper functions
@@ -63,8 +66,9 @@ def get_mods():
     send_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :/mods\r\n"
     irc.send(send_string.encode())
     mods_string = irc.recv(2040)
-    op = {Config.JOIN_CHANNEL}
-    return parse_mods_list(mods_string).union(op)
+    mods_set = parse_mods_list(mods_string)
+    mods_set.add(Config.JOIN_CHANNEL)
+    return mods_set
 
 
 def parse_mods_list(mods_string):
@@ -76,7 +80,7 @@ def parse_mods_list(mods_string):
     decoded = mods_string.decode()
     split_string = decoded.split(": ")
     if len(split_string) == 1:  # list of users not in string, so there are no mods
-        return {}
+        return set()
     else:
         user_string = split_string[-1].rstrip()
         return {x for x in user_string.split(", ")}  # since users are separated by ", ", this makes set of them
@@ -144,12 +148,15 @@ class ServerMessage(object):
 class Message(object):
     def __init__(self, text, sender):
         """
-        Initializes a Message object with text text
+        Initializes a Message object with text text written by sender sender with mod status sender_mod
         :param text: String, contents of message
         :param sender: String, username of Twitch user who sent message
         """
         self.text = text
         self.sender = sender
+        self.sender_mod = False
+        if self.sender in chat_mods:
+            self.sender_mod = True
 
     def get_text(self):
         return self.text
@@ -162,6 +169,9 @@ class Message(object):
 
     def get_args(self):
         return []
+
+    def is_sender_mod(self):
+        return self.sender_mod
 
 
 class Command(Message):
@@ -236,9 +246,13 @@ if __name__ == "__main__":
     print(cmd_prefix + "exit to exit")
     if connect() is True and join() is True:
         print("Ready!")
+    chat_mods = get_mods()
+    print(chat_mods)
     msg_timer = time.time_ns()
+    mod_timer = time.time_ns()
     SECOND_TO_NS_CONV = 10**9
-    rate_limit = NON_MOD_RATE_LIMIT * SECOND_TO_NS_CONV  # in future, check if bot is a mod and set limit accordingly
+    rate_limit = (MOD_RATE_LIMIT if Secret.bot_username in chat_mods else NON_MOD_RATE_LIMIT) * SECOND_TO_NS_CONV
+    mod_update_limit = MOD_UPDATE_TIMEOUT * SECOND_TO_NS_CONV
     while True:
         recv_text = irc.recv(2040)
         if Config.DEBUG_MODE:
@@ -264,3 +278,11 @@ if __name__ == "__main__":
                 elif message.get_command():
                     command_handler(message)
                     msg_timer = time.time_ns()
+        # if time.time_ns() - mod_timer > mod_update_limit:
+        #     print("mod update")
+        #     chat_mods = get_mods()
+        #     print(chat_mods)
+        #     rate_limit = (
+        #                 MOD_RATE_LIMIT if Secret.bot_username in chat_mods else NON_MOD_RATE_LIMIT) * SECOND_TO_NS_CONV
+        #     mod_timer = time.time_ns()
+        #     msg_timer = time.time_ns()

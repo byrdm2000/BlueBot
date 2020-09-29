@@ -159,7 +159,7 @@ class ParseModStringTest(unittest.TestCase):
         # Covers # mods = 0
         mod_string = b':tmi.twitch.tv NOTICE #test :There are no moderators of this channel.\r\n'
         mods_set = parse_mods_list(mod_string)
-        self.assertEqual(mods_set, {})
+        self.assertEqual(mods_set, set())
 
     def test_some_mods(self):
         # Covers # mods > 0

@@ -262,7 +262,12 @@ class Player(object):
 def command_handler(command):
     sub_command = command.get_args()[0]
     requester = command.get_sender()
+    requester_is_mod = command.is_sender_mod()
     sub_args = command.get_args()[1::]
+
+    if sub_command == "currentsong":
+        current_song = player.get_current_media()
+        out.write('Playing "' + current_song.get_media_title() + '" requested by ' + current_song.get_requester())
 
     if sub_command == "queue":
         queue = player.get_queue()
@@ -275,7 +280,7 @@ def command_handler(command):
         else:
             out.write("Queue is empty")
 
-    if sub_command == "skip":
+    if sub_command == "skip" and requester_is_mod:
         skipped_song = player.get_current_media()
         player.advance_queue()
         out.write('Skipped "' + skipped_song.get_media_title() + '" requested by ' + skipped_song.get_requester())
@@ -283,10 +288,10 @@ def command_handler(command):
     if sub_command == "songrequest":
         request_command = sub_args
         request_args = sub_args[1::]
-        if request_command == "enable":
+        if request_command == "enable" and requester_is_mod:
             player.enable_playback()
             out.write("Songrequests enabled")
-        elif request_command == "disable":
+        elif request_command == "disable" and requester_is_mod:
             player.disable_playback()
             out.write("Songrequests disabled")
         elif request_command == "status":
@@ -294,7 +299,7 @@ def command_handler(command):
                 out.write("Songrequests: enabled")
             else:
                 out.write("Songrequests: disabled")
-        elif request_command == "stop":
+        elif request_command == "stop" and requester_is_mod:
             player.stop()
             out.write("Queue cleared!")
         else:  # must be a songrequest <url>
@@ -305,7 +310,7 @@ def command_handler(command):
     if sub_command == "volume":
         if len(sub_args) == 0:  # just volume, no arg
             out.write(player.get_volume())
-        else:
+        elif requester_is_mod:
             volume = sub_args[0]
             player.set_volume(volume)
             out.write("Volume set to " + player.get_volume())
