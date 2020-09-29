@@ -1,5 +1,5 @@
 import unittest
-from main import ServerMessage, Message, Command, message_factory
+from main import ServerMessage, Message, Command, message_factory, parse_mods_list
 
 
 class ServerMessageTest(unittest.TestCase):
@@ -148,6 +148,24 @@ class FactoryTest(unittest.TestCase):
         self.assertEqual(factory_result.get_text(), text)
         self.assertEqual(factory_result.get_command(), expected_command)
         self.assertEqual(factory_result.get_args(), expected_args)
+
+
+class ParseModStringTest(unittest.TestCase):
+    """
+    Partition on number of mods: # mods = 0, # mods > 0
+    """
+
+    def test_no_mods(self):
+        # Covers # mods = 0
+        mod_string = b':tmi.twitch.tv NOTICE #test :There are no moderators of this channel.\r\n'
+        mods_set = parse_mods_list(mod_string)
+        self.assertEqual(mods_set, {})
+
+    def test_some_mods(self):
+        # Covers # mods > 0
+        mod_string = b':tmi.twitch.tv NOTICE #test :The moderators of this channel are: test\r\n'
+        mods_set = parse_mods_list(mod_string)
+        self.assertEqual(mods_set, {'test'})
 
 
 if __name__ == '__main__':

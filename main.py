@@ -48,9 +48,38 @@ def join():
     server_text = irc.recv(2040)
     if server_text.find("End of /NAMES list".encode()):
         print("Join successful")
+    cap_string = "CAP REQ :twitch.tv/commands\r\n"
+    irc.send(cap_string.encode())
     test_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :Bot connected!\r\n"
     irc.send(test_string.encode())
     return True
+
+
+def get_mods():
+    """
+    Retrieves list of moderators and ops for channel using the COMMANDS capability
+    :return: Set of strings, where each item is a username of a moderator or operator of the channel
+    """
+    send_string = "PRIVMSG #" + Config.JOIN_CHANNEL + " :/mods\r\n"
+    irc.send(send_string.encode())
+    mods_string = irc.recv(2040)
+    op = {Config.JOIN_CHANNEL}
+    return parse_mods_list(mods_string).union(op)
+
+
+def parse_mods_list(mods_string):
+    """
+    Helper function for parsing list of moderators from string returned by /mods command
+    :param mods_string: Encoded string returned by /mods command
+    :return: Set of strings, where each item is a username of a moderator of the channel
+    """
+    decoded = mods_string.decode()
+    split_string = decoded.split(": ")
+    if len(split_string) == 1:  # list of users not in string, so there are no mods
+        return {}
+    else:
+        user_string = split_string[-1].rstrip()
+        return {x for x in user_string.split(", ")}  # since users are separated by ", ", this makes set of them
 
 
 def send(text):
@@ -81,8 +110,9 @@ class ServerMessage(object):
             self.content = ""
         elif split_response[0].find("PRIVMSG") != -1:  # is chat message variant
             self.ping = False
-            m = re.search('(?<=:).*(?=!)', split_response[0])  # matches characters between : and ! in string, exclusive
-            self.sender = m.group(0)
+            # matches characters between : and ! in string, exclusive
+            match = re.search('(?<=:).*(?=!)', split_response[0])
+            self.sender = match.group(0)
             self.content = split_response[1].rstrip()  # since messages include '\r\n' at end
         elif split_response[0] == '':  # is blank string
             self.ping = False
@@ -197,6 +227,7 @@ def command_handler(command):
             except Exception as err:
                 print("[ERROR] An error occured in module", m)
                 traceback.print_tb(err.__traceback__)
+                # possibly remove module after error command
 
 
 if __name__ == "__main__":
