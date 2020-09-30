@@ -3,7 +3,8 @@ import vlc
 
 # You can import anything that your module may need at the top, just like a regular Python script
 
-HANDLED_COMMANDS = {"songrequest", "skip", "volume", "currentsong"}  # Add commands that your module can handle here, without prefix
+# Add commands that your module can handle here, without prefix
+HANDLED_COMMANDS = {"songrequest", "skip", "volume", "currentsong"}
 
 
 class Output(object):
@@ -260,19 +261,26 @@ class Player(object):
 
 # Command handler function allows commands to be handled from main python file. REQUIRED.
 def command_handler(command):
-    sub_command = command.get_args()[0]
+    if len(command.get_args()) == 1:
+        sub_command = command.get_args()[0]
+        sub_args = None
+    elif len(command.get_args()) > 1:
+        sub_command = command.get_args()[0]
+        sub_args = command.get_args()[1::]
+    else:
+        sub_command = None
+        sub_args = None
     requester = command.get_sender()
     requester_is_mod = command.is_sender_mod()
-    sub_args = command.get_args()[1::]
 
-    if sub_command == "currentsong":
+    if command.get_command() == "currentsong":
         current_song = player.get_current_media()
         if current_song:
             out.write('Playing "' + current_song.get_media_title() + '" requested by ' + current_song.get_requester())
         else:
             out.write("Nothing currently playing.")
 
-    if sub_command == "queue":
+    if command.get_command() == "queue":
         queue = player.get_queue()
         if len(queue) > 0:
             out_string = ""
@@ -283,14 +291,15 @@ def command_handler(command):
         else:
             out.write("Queue is empty")
 
-    if sub_command == "skip" and requester_is_mod:
+    if command.get_command() == "skip" and requester_is_mod:
         skipped_song = player.get_current_media()
         player.advance_queue()
         out.write('Skipped "' + skipped_song.get_media_title() + '" requested by ' + skipped_song.get_requester())
 
-    if sub_command == "songrequest":
-        request_command = sub_args
-        request_args = sub_args[1::]
+    if command.get_command() == "songrequest":
+        request_command = sub_command
+        if sub_args:
+            request_args = sub_args[1::]
         if request_command == "enable" and requester_is_mod:
             player.enable_playback()
             out.write("Songrequests enabled")
@@ -310,13 +319,13 @@ def command_handler(command):
             media = player.add_loc(url, requester)
             out.write('Added: "' + media.get_media_title() + '" requested by ' + media.get_requester())
 
-    if sub_command == "volume":
-        if len(sub_args) == 0:  # just volume, no arg
+    if command.get_command() == "volume":
+        if sub_args is None:  # just volume, no arg
             out.write(player.get_volume())
         elif requester_is_mod:
             volume = sub_args[0]
             player.set_volume(volume)
-            out.write("Volume set to " + player.get_volume())
+            out.write("Volume set to " + str(player.get_volume()))
 
 
 # You can add additional functions your module may need here.
