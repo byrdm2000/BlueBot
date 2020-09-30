@@ -57,6 +57,7 @@ class Economy(object):
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS balance (user text, balance real)''')
         conn.commit()
+        conn.close()
 
     def get_balance(self, user):
         """
