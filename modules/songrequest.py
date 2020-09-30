@@ -315,7 +315,7 @@ def command_handler(command):
             player.stop()
             out.write("Queue cleared!")
         else:  # must be a songrequest <url>
-            url = request_args[0]
+            url = request_command
             media = player.add_loc(url, requester)
             out.write('Added: "' + media.get_media_title() + '" requested by ' + media.get_requester())
 
