@@ -61,7 +61,7 @@ class Economy(object):
 
     def get_balance(self, user):
         """
-        Retrieves balance for user
+        Retrieves balance for user. Returns 0 if user not in database.
         :param user: String, user to retrieve balance for
         :return: Integer, balance for user
         """
@@ -71,7 +71,7 @@ class Economy(object):
         Transfers amount from user1's balance to user2's balance
         :param from_user: String, username of person to take amount from
         :param to_user: String, username of person to give amount to
-        :param amount: Integer, amount of money to transfer
+        :param amount: Integer, amount of money to transfer (must be positive)
         :return: True if successful, False otherwise (e.g. low balance)
         """
 
@@ -79,15 +79,15 @@ class Economy(object):
         """
         Adds amount to a user's balance
         :param user: String, username to deposit to
-        :param amount: Int, amount to add
+        :param amount: Int, amount to add (must be positive)
         :return: None, modifies database directly
         """
 
-    def depositall(self, users, amount):
+    def deposit_all(self, users, amount):
         """
         Adds amount to every user's balance
         :param users: Set of strings representing users to deposit to
-        :param amount: Int, amount to add
+        :param amount: Int, amount to add (must be positive)
         :return: None, modifies database directly
         """
 
