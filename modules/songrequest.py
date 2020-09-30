@@ -3,7 +3,7 @@ import vlc
 
 # You can import anything that your module may need at the top, just like a regular Python script
 
-HANDLED_COMMANDS = {"songrequest", "skip", "volume"}  # Add commands that your module can handle here, without prefix
+HANDLED_COMMANDS = {"songrequest", "skip", "volume", "currentsong"}  # Add commands that your module can handle here, without prefix
 
 
 class Output(object):
@@ -267,7 +267,10 @@ def command_handler(command):
 
     if sub_command == "currentsong":
         current_song = player.get_current_media()
-        out.write('Playing "' + current_song.get_media_title() + '" requested by ' + current_song.get_requester())
+        if current_song:
+            out.write('Playing "' + current_song.get_media_title() + '" requested by ' + current_song.get_requester())
+        else:
+            out.write("Nothing currently playing.")
 
     if sub_command == "queue":
         queue = player.get_queue()
