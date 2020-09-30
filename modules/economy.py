@@ -1,3 +1,5 @@
+from config import Config
+import requests
 import sqlite3
 import time
 # You can import anything that your module may need at the top, just like a regular Python script
@@ -171,31 +173,76 @@ class Economy(object):
 
 # Command handler function allows commands to be handled from main python file. REQUIRED.
 def command_handler(command):
-    pass
+    econ_command = command.get_command()
+    econ_args = command.get_args()
+    sender_is_mod = command.is_sender_mod()
+
+    if econ_command == "pay":
+        if len(econ_args) == 2:
+            payer = command.get_sender()
+            payee = econ_args[0]
+            amount = econ_args[1]
+            if amount >= 1:
+                econ.transfer(payer, payee, amount)
+                out.write(payer + " sent " + str(amount) + " " + currency + " to " + payee)
+
+    if econ_command == "balance":
+        inquirer = command.get_sender()
+        balance = econ.get_balance(inquirer)
+        out.write(inquirer + "'s balance is " + str(balance) + " " + currency)
+
+    if econ_command == "deposit" and sender_is_mod:
+        if len(econ_args) == 2:
+            payee = econ_args[0]
+            amount = econ_args[1]
+            if amount >= 1:
+                econ.deposit(payee, amount)
+                out.write(str(amount) + " " + currency + " has been paid to " + payee)
+
+    if econ_command == "depositall" and sender_is_mod:
+        if len(econ_args) == 1:
+            amount = econ_args[0]
+            if amount >= 1:
+                users = get_users()
+                econ.deposit_all(users, amount)
+                out.write(str(amount) + " " + currency + " has been paid to " + str(len(users)) + " chatters.")
 
 
 # You can add additional functions your module may need here.
-
 def get_users():
     """
-    Gets set of all users from output of /NAMES command
-    :return: Set of strings, representing usernames of users present in chat
+    Using a Twitch JSON endpoint, retrieve current viewers in stream
+    :return: Set of strings, where each string is a viewer's username
     """
-
-
-def parse_user_string(names_string):
-    """
-    Parses string from output of /NAMES command
-    :param names_string: String, output of /NAMES command, includes usernames of all users currently in chat
-    :return: Set of strings, representing usernames of users present in chat
-    """
+    r = requests.get("http://tmi.twitch.tv/group/user/" + Config.JOIN_CHANNEL + "/chatters")
+    data = r.json()
+    chatters = data.get("chatters")
+    all_users = set()
+    for rank, users in chatters.items():
+        all_users.update(users)
+    return all_users
 
 
 # Put any initialization code here
+econ = Economy()
+currency = "berries"  # move to config once config manager is working
+
 # Reward info
 small_deposit_period = 5*60
 big_deposit_period = 60*60
 small_deposit_amount = 10
 big_deposit_amount = 50
 
-# Use loop with timers to periodically depositall
+small_timer = time.time()
+big_timer = time.time()
+
+while True:
+    if time.time() - big_timer > big_deposit_period:
+        users = get_users()
+        econ.deposit_all(users, big_deposit_amount)
+        out.write("Everyone has received " + str(big_deposit_amount) + " " + currency + ". Thanks for your support!")
+        big_timer = time.time()
+    elif time.time() - small_timer > small_deposit_period:
+        users = get_users()
+        econ.deposit_all(users, small_deposit_amount)
+        small_timer = time.time()
