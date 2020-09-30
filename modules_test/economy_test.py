@@ -15,20 +15,19 @@ class EconomyTest(unittest.TestCase):
         """
         conn = sqlite3.connect(economy.econ_db)
         c = conn.cursor()
-        c.execute('''INSERT INTO balance VALUES (?, ?)''', (user, initial_amount))
+        c.execute('''INSERT INTO balance VALUES (?, ?);''', (user, initial_amount))
         conn.commit()
         conn.close()
 
-    def delete_user(self, economy, user):
+    def drop_table(self, economy):
         """
-        Helper function for removing users from database
-        :param economy: Economy object to modify
-        :param user: Name of user to delete
+        Helper function that drops balance table from database
+        :param economy: Economy object
         :return: None, modifies database directly
         """
         conn = sqlite3.connect(economy.econ_db)
         c = conn.cursor()
-        c.execute('''DELETE FROM balance WHERE user = ?''', (user,))
+        c.execute('''DROP TABLE balance;''')
         conn.commit()
         conn.close()
 
@@ -42,7 +41,7 @@ class EconomyTest(unittest.TestCase):
         econ = Economy()
         self.add_user(econ, "test_user", 69)
         self.assertEqual(econ.get_balance("test_user"), 69)
-        self.delete_user(econ, "test_user")
+        self.drop_table(econ)
 
     def test_bal_user_not_in_db(self):
         # Covers user: user not in db
@@ -65,7 +64,7 @@ class EconomyTest(unittest.TestCase):
         econ = Economy()
         self.add_user(econ, "user2", 69)
         self.assertFalse(econ.transfer("user1", "user2", 69))  # since user1 doesn't exist, nothing to transfer
-        self.delete_user(econ, "user2")
+        self.drop_table(econ)
 
     def test_tx_to_not_in_db(self):
         # Covers from_user: user in db, to_user: user not in db
@@ -74,8 +73,7 @@ class EconomyTest(unittest.TestCase):
         self.assertTrue(econ.transfer("user1", "user2", 69))  # adds user2 to db
         self.assertEqual(econ.get_balance("user1"), 0)
         self.assertEqual(econ.get_balance("user2"), 69)
-        self.delete_user(econ, "user1")
-        self.delete_user(econ, "user2")
+        self.drop_table(econ)
 
     def test_tx_both_in_db(self):
         # Covers from_user: user in db, to_user: user in db
@@ -85,8 +83,7 @@ class EconomyTest(unittest.TestCase):
         self.assertTrue(econ.transfer("user1", "user2", 69))
         self.assertEqual(econ.get_balance("user1"), 0)
         self.assertEqual(econ.get_balance("user2"), 138)
-        self.delete_user(econ, "user1")
-        self.delete_user(econ, "user2")
+        self.drop_table(econ)
 
     """
     Tests for deposit
@@ -99,14 +96,14 @@ class EconomyTest(unittest.TestCase):
         self.add_user(econ, "test_user", 69)
         econ.deposit("test_user", 351)
         self.assertEqual(econ.get_balance("test_user"), 420)
-        self.delete_user(econ, "test_user")
+        self.drop_table(econ)
 
     def test_deposit_user_not_in_db(self):
         # Covers user: user not in db
         econ = Economy()
         econ.deposit("test_user", 420)
         self.assertEqual(econ.get_balance("test_user"), 420)
-        self.delete_user(econ, "test_user")
+        self.drop_table(econ)
 
     """
     Test for deposit_all
@@ -118,8 +115,7 @@ class EconomyTest(unittest.TestCase):
         econ.deposit_all(users, 69)
         self.assertEqual(econ.get_balance("user1"), 138)
         self.assertEqual(econ.get_balance("user2"), 69)
-        self.delete_user(econ, "user1")
-        self.delete_user(econ, "user2")
+        self.drop_table(econ)
 
 
 if __name__ == '__main__':

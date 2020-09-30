@@ -65,6 +65,17 @@ class Economy(object):
         :param user: String, user to retrieve balance for
         :return: Integer, balance for user
         """
+        conn = sqlite3.connect(self.econ_db)
+        c = conn.cursor()
+        c.execute('''SELECT balance FROM balance WHERE user = ?''', (user,))
+        result = c.fetchone()
+        if result is not None:
+            balance = result[0]
+        else:
+            balance = 0
+        conn.commit()
+        conn.close()
+        return balance
 
     def transfer(self, from_user, to_user, amount):
         """
@@ -73,7 +84,37 @@ class Economy(object):
         :param to_user: String, username of person to give amount to
         :param amount: Integer, amount of money to transfer (must be positive)
         :return: True if successful, False otherwise (e.g. low balance)
+        :raise: ValueError if amount is not positive
         """
+        if amount < 1:
+            raise ValueError
+        conn = sqlite3.connect(self.econ_db)
+        c = conn.cursor()
+
+        # Get and update from_user balance
+        c.execute('''SELECT balance FROM balance WHERE user = ?;''', (from_user,))
+        result = c.fetchone()
+        if result is not None:  # user in db
+            new_balance = result[0] - amount
+            c.execute('''UPDATE balance SET balance = ? WHERE user = ?;''', (new_balance, from_user))
+            if new_balance < 0:
+                return False
+        else:  # user not in db
+            return False
+
+        # Get and update to_user balance
+        c.execute('''SELECT balance FROM balance WHERE user = ?;''', (to_user,))
+        result = c.fetchone()
+        if result is not None:  # user in db
+            new_balance = result[0] + amount
+            c.execute('''UPDATE balance SET balance = ? WHERE user = ?;''', (new_balance, to_user))
+        else:  # user not in db
+            new_balance = amount
+            c.execute('''INSERT INTO balance VALUES (?, ?);''', (to_user, new_balance))
+
+        conn.commit()
+        conn.close()
+        return True
 
     def deposit(self, user, amount):
         """
@@ -81,7 +122,25 @@ class Economy(object):
         :param user: String, username to deposit to
         :param amount: Int, amount to add (must be positive)
         :return: None, modifies database directly
+        :raise: ValueError if amount is not positive
         """
+        if amount < 1:
+            raise ValueError
+        conn = sqlite3.connect(self.econ_db)
+        c = conn.cursor()
+
+        # Get and update user balance
+        c.execute('''SELECT balance FROM balance WHERE user = ?;''', (user,))
+        result = c.fetchone()
+        if result is not None:  # user in db
+            new_balance = result[0] + amount
+            c.execute('''UPDATE balance SET balance = ? WHERE user = ?;''', (new_balance, user))
+        else:  # user not in db
+            new_balance = amount
+            c.execute('''INSERT INTO balance VALUES (?, ?);''', (user, new_balance))
+
+        conn.commit()
+        conn.close()
 
     def deposit_all(self, users, amount):
         """
@@ -89,7 +148,25 @@ class Economy(object):
         :param users: Set of strings representing users to deposit to
         :param amount: Int, amount to add (must be positive)
         :return: None, modifies database directly
+        :raise: ValueError if amount is not positive
         """
+        if amount < 1:
+            raise ValueError
+        conn = sqlite3.connect(self.econ_db)
+        c = conn.cursor()
+
+        for user in users:
+            c.execute('''SELECT balance FROM balance WHERE user = ?;''', (user,))
+            result = c.fetchone()
+            if result is not None:  # user in db
+                new_balance = result[0] + amount
+                c.execute('''UPDATE balance SET balance = ? WHERE user = ?;''', (new_balance, user))
+            else:  # user not in db
+                new_balance = amount
+                c.execute('''INSERT INTO balance VALUES (?, ?);''', (user, new_balance))
+
+        conn.commit()
+        conn.close()
 
 
 # Command handler function allows commands to be handled from main python file. REQUIRED.
