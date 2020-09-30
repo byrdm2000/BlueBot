@@ -19,7 +19,7 @@ finder = modulefinder.ModuleFinder(["modules"])
 AVAIL_MODULES = finder.find_all_submodules(modules)
 
 chat_mods = set()
-MOD_UPDATE_TIMEOUT = 30  # time between getting mod list from server
+MOD_UPDATE_TIMEOUT = 40  # time between getting mod list from server
 
 
 # TODO: make better helper functions
@@ -246,24 +246,35 @@ if __name__ == "__main__":
     print(cmd_prefix + "exit to exit")
     if connect() is True and join() is True:
         print("Ready!")
+
     chat_mods = get_mods()
-    print(chat_mods)
     msg_timer = time.time_ns()
     mod_timer = time.time_ns()
     SECOND_TO_NS_CONV = 10**9
     rate_limit = (MOD_RATE_LIMIT if Secret.bot_username in chat_mods else NON_MOD_RATE_LIMIT) * SECOND_TO_NS_CONV
     mod_update_limit = MOD_UPDATE_TIMEOUT * SECOND_TO_NS_CONV
+
     while True:
         recv_text = irc.recv(2040)
         if Config.DEBUG_MODE:
             print(recv_text)
         server_response = ServerMessage(recv_text)
 
+        # Check module output
         for m in AVAIL_MODULES:
             mod = __import__("modules." + m, fromlist=["out"])
             out_func = getattr(mod, "out")
             if out_func.is_updated():
                 send(out_func.read())
+
+        # Update mod list
+        if time.time_ns() - mod_timer > mod_update_limit:
+            chat_mods = get_mods()
+            rate_limit = (
+                        MOD_RATE_LIMIT if Secret.bot_username in chat_mods else NON_MOD_RATE_LIMIT) * SECOND_TO_NS_CONV
+            mod_timer = time.time_ns()
+            if Config.DEBUG_MODE:
+                print("[DEBUG] Mods:", chat_mods)
 
         # To obey Twitch send rate limit, we reset timer on send
         if time.time_ns() - msg_timer > rate_limit:
@@ -278,11 +289,3 @@ if __name__ == "__main__":
                 elif message.get_command():
                     command_handler(message)
                     msg_timer = time.time_ns()
-        # if time.time_ns() - mod_timer > mod_update_limit:
-        #     print("mod update")
-        #     chat_mods = get_mods()
-        #     print(chat_mods)
-        #     rate_limit = (
-        #                 MOD_RATE_LIMIT if Secret.bot_username in chat_mods else NON_MOD_RATE_LIMIT) * SECOND_TO_NS_CONV
-        #     mod_timer = time.time_ns()
-        #     msg_timer = time.time_ns()
