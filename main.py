@@ -260,10 +260,12 @@ if __name__ == "__main__":
             print(recv_text)
         server_response = ServerMessage(recv_text)
 
-        # Check module output
+        # Check module output, and update
         for m in AVAIL_MODULES:
-            mod = __import__("modules." + m, fromlist=["out"])
+            mod = __import__("modules." + m, fromlist=["out", "update"])
             out_func = getattr(mod, "out")
+            update_func = getattr(mod, "update")
+            update_func()
             if out_func.is_updated():
                 send(out_func.read())
 

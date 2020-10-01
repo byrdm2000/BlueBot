@@ -333,3 +333,8 @@ def command_handler(command):
 # Put any initialization code here
 player = Player()
 print("Songrequest module loaded")
+
+
+# Finally, anything that needs to be ran in a loop should be in the update() function. This can be empty. REQUIRED.
+def update():
+    pass

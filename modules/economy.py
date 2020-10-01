@@ -171,6 +171,9 @@ class Economy(object):
         conn.close()
 
 
+econ = Economy()
+
+
 # Command handler function allows commands to be handled from main python file. REQUIRED.
 def command_handler(command):
     econ_command = command.get_command()
@@ -223,8 +226,50 @@ def get_users():
     return all_users
 
 
+def store_time(timer, value):
+    """
+    Stores time value in database
+    :param timer: String, what to call timer
+    :param value: Float, timer value
+    :return: None, modifies database directly
+    """
+    conn = sqlite3.connect(econ.econ_db)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS timers (timer text, time_val real);''')
+
+    c.execute('''SELECT time_val FROM timers WHERE timer = ?;''', (timer,))
+    result = c.fetchone()
+    if result is not None:  # timer in db
+        c.execute('''UPDATE timers SET time_val = ? WHERE timer = ?;''', (value, timer))
+    else:  # timer not in db
+        c.execute('''INSERT INTO timers VALUES (?, ?);''', (timer, value))
+
+    conn.commit()
+    conn.close()
+
+
+def get_time(timer):
+    """
+    Retrieves timer value in database
+    :param timer: Name of timer
+    :return: Value of timer if exists, or None otherwise
+    """
+    conn = sqlite3.connect(econ.econ_db)
+    c = conn.cursor()
+
+    c.execute('''SELECT time_val FROM timers WHERE timer = ?;''', (timer,))
+    result = c.fetchone()
+    if result is not None:  # timer in db
+        value = result[0]
+    else:  # timer not in db
+        value = None
+
+    conn.commit()
+    conn.close()
+    return value
+
+
 # Put any initialization code here
-econ = Economy()
 currency = "berries"  # move to config once config manager is working
 
 # Reward info
@@ -233,16 +278,18 @@ big_deposit_period = 60*60
 small_deposit_amount = 10
 big_deposit_amount = 50
 
-small_timer = time.time()
-big_timer = time.time()
+store_time("small", time.time())
+store_time("big", time.time())
 
-while True:
-    if time.time() - big_timer > big_deposit_period:
+
+# Finally, anything that needs to be ran in a loop should be in the update() function. This can be empty. REQUIRED.
+def update():
+    if time.time() - get_time("big") > big_deposit_period:
         users = get_users()
         econ.deposit_all(users, big_deposit_amount)
         out.write("Everyone has received " + str(big_deposit_amount) + " " + currency + ". Thanks for your support!")
-        big_timer = time.time()
-    elif time.time() - small_timer > small_deposit_period:
+        store_time("big", time.time())
+    elif time.time() - get_time("small") > small_deposit_period:
         users = get_users()
         econ.deposit_all(users, small_deposit_amount)
-        small_timer = time.time()
+        store_time("small", time.time())
